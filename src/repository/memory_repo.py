@@ -5,7 +5,6 @@ from typing import Any
 from jinja2.nodes import Assign
 
 from src.domain.assignment import Assignment, AssignmentError
-from src.domain.average_grade import AverageGrade
 from src.domain.student import Student, StudentError
 from src.domain.grade import Grade, GradeError
 from faker import Faker
@@ -160,7 +159,7 @@ class AssignmentMemoryRepo(object):
             raise RepositoryError(f"This assignment ID ({id}) does not exist, cannot update a non-existent assignment.")
         self._assignments[id].description = new_description
 
-    def update_deadline(self, id: int, new_deadline: datetime.date) -> None:
+    def update_deadline(self, id: int, new_deadline: datetime) -> None:
         """
         Updates the group of a given student by its ID
         :param id: The id of the student
@@ -176,9 +175,24 @@ class GradeMemoryRepo(object):
     def __init__(self):
         self.__fake = Faker()
         self._grades: dict[str, Grade] = {}
-        self._average_grades : dict[int, AverageGrade] = {}
+        self._average_grades : dict[int, float] = {} #dict[student_id, average_grade]
 
         self.__generate_random_20()
+
+    def _compute_average(self, student_id: int):
+        average = 0
+        grade_count = 0
+        for grade in self._grades.values():
+            if grade.student_id == student_id:
+                if grade.grade_value !=0 :
+                    average += grade.grade_value
+                    grade_count += 1
+
+        if grade_count == 0:
+            self._average_grades[student_id] = 0
+            return
+
+        self._average_grades[student_id] = round(average/grade_count, 2)
 
     def __generate_random_20(self) -> None:
         """
@@ -190,7 +204,7 @@ class GradeMemoryRepo(object):
             # From 0 to 19, because that is the number of students and assignments
             grade: Grade = Grade(i, randint(0, 19), randint(1, 10))
             self._grades[str(grade.student_id) + " " + str(grade.assignment_id)] = grade
-            self._average_grades[i] = AverageGrade(i, {grade.assignment_id:grade.grade_value})
+            self._average_grades[i] = grade.grade_value
 
     def __getitem__(self, item):
         return self._grades[item]
@@ -214,8 +228,7 @@ class GradeMemoryRepo(object):
             raise RepositoryError("Adding a grade should have a grade between 1-10, use assign() to assign an ungraded assignment of grade 0 to a student.")
 
         self._grades[key] = Grade(student_id, assignment_id, grade_value)
-        self._average_grades[student_id].grades[assignment_id] = grade_value
-        self._average_grades[student_id].compute_average()
+        self._compute_average(student_id)
 
     def assign(self, student_id: int, assignment_id: int) -> None:
         """
@@ -246,9 +259,7 @@ class GradeMemoryRepo(object):
             raise RepositoryError(
                 f"There is no such grade to remove, no assignment with ID {assignment_id} for student with ID {student_id}")
 
-        if self._grades[key].grade_value != 0: #If it's 0, there is no grade for it, so no average grade to compute again
-            del self._average_grades[student_id].grades[assignment_id]
-            self._average_grades[student_id].compute_average()
+        self._compute_average(student_id)
         del self._grades[key]
 
     def grade_assignment(self, student_id: int, assignment_id: int, grade_value: int):
@@ -258,9 +269,7 @@ class GradeMemoryRepo(object):
                 f"There is no assignment with ID {assignment_id} to grade for student with ID {student_id}")
 
         self._grades[key].grade_value = grade_value
-
-        self._average_grades[student_id].grades[assignment_id] = grade_value
-        self._average_grades[student_id].compute_average()
+        self._compute_average(student_id)
 
     def __iter__(self):
         return SingleRepoIterator(self._grades)
@@ -288,19 +297,20 @@ class GradeMemoryRepo(object):
         :param assignment_id: The ID of the assignment to remove
         :return: None
         """
-        for student_id in self._average_grades:
-            for assignment_id_current in self._average_grades[student_id].grades:
-                if assignment_id_current == assignment_id:
-                    del self._average_grades[student_id].grades[assignment_id]
-                    break
 
         keys = []
+        student_ids = []
         for key in self._grades.keys():
             if self._grades[key].assignment_id == assignment_id:
                 keys.append(key)
+                student_ids.append(self._grades[key].student_id)
 
         for key in keys:
             del self._grades[key]
 
+        # Removed the assignment from all the students which had it, so compute their average again
+        for student_id in student_ids:
+            self._compute_average(student_id)
+
     def get_average_grades(self): # Gets the average grades of the students
-        return list(self._average_grades.values()) #AverageGrade list
+        return self._average_grades #Average Grades list

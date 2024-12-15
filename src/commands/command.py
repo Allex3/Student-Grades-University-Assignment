@@ -30,7 +30,10 @@ class Assign:
         # print(params) = (1, 2, 3)
         # print(*params) = 1, 2, 3, wow
         has_assignment = self.__func(*self.__params)
-        print (f"Students with IDs {set(has_assignment)} from the group already have this assignment")
+        if not has_assignment:
+            print("Each student in the group received the assignment.")
+        else:
+            print (f"Students with IDs {set(has_assignment)} from the group already have this assignment")
 
     def __call__(self, *args, **kwargs):
         self.__call()

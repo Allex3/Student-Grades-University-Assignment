@@ -106,6 +106,8 @@ class GradeBinaryRepo(GradeMemoryRepo):
         except EOFError:
             self.__save()
         fin.close()
+        for grade in self._grades.values():
+            super()._compute_average(grade.student_id)
 
     def __save(self):
         fout = open(self.__file_path, "wb")

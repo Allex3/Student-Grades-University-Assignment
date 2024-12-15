@@ -134,6 +134,9 @@ class GradeTextRepo(GradeMemoryRepo):
             self._grades[f"{str(student_id)} {str(assignment_id)}"] = Grade(student_id, assignment_id, grade_value)
         fin.close()
 
+        for grade in self._grades.values():
+            super()._compute_average(grade.student_id)
+
     def __save(self):
         fout = open(self.__file_path, "w")
         for grade in self._grades.values():

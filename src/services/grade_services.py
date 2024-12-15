@@ -6,7 +6,7 @@ from src.repository.repo_error import RepositoryError
 from src.domain.grade import Grade, GradeError
 from src.repository.binary_repo import GradeBinaryRepo
 from src.repository.text_repo import GradeTextRepo
-from src.repository.memory_repo import GradeMemoryRepo, Grade, Assignment, Student, AverageGrade
+from src.repository.memory_repo import GradeMemoryRepo, Grade, Assignment, Student
 
 class Success(Exception):
     pass
@@ -40,7 +40,10 @@ class GradeServices(object):
         return assignment_grades
 
     def get_grade(self, student_id: int, assignment_id: int):
-        return self.__grade_repo[f"{str(student_id)} {str(assignment_id)}"]
+        try:
+            return self.__grade_repo[f"{str(student_id)} {str(assignment_id)}"]
+        except:
+            raise RepositoryError("This student doesn't have such a grade, ungraded or not.")
 
     def add(self, student_id: int, assignment_id: int, grade_value: int) -> None:
         """
@@ -142,12 +145,16 @@ class GradeServices(object):
                     assignment = self.__assignment_repo[grade.assignment_id]
                     if datetime.now() > assignment.deadline:
                         late_student_grades.append(grade) # We append the ungraded (grade) assignment at which this student is late
-            late_students.append(late_student_grades)
+
+            if late_student_grades:
+                late_students.append(late_student_grades)
 
         return late_students
 
     def get_best_students_grades(self):
-        average_grades: list[AverageGrade] = self.__grade_repo.get_average_grades()
-        average_grades.sort(key = lambda average_grade: average_grade.average, reverse=True)
-        return average_grades
+        average_grades: dict[int, int] = self.__grade_repo.get_average_grades()
+        average_grades_sorted = {k: v for k, v in sorted(average_grades.items(), key=lambda item:item[1], reverse=True)}
+        # item[1] in pair (key, value) is sorting based on the value from the tuple of dictionary items
+        # And for that sorted list of tuples, we reconstruct the dictionary with the key and value from the tuple, this time in order
+        return average_grades_sorted
 

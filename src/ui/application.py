@@ -225,35 +225,42 @@ class Application(object):
         full_command = CommandUndoRedo(command, undo_command)
         self.__execute_command(full_command)
 
-    def __update_student(self):
+    def __update_student_name(self):
         student_id = self.__get_student_id()
+        new_name = self.__get_student_name()
+        try:
+            old_name = self.__student_services.get_name(student_id)
+        except Exception as e:
+            print(e)
+            return
+        command = Command(self.__student_services.update_name, student_id, new_name)
+        undo_command = Command(self.__student_services.update_name, student_id, old_name)
+        full_command = CommandUndoRedo(command, undo_command)
+        self.__execute_command(full_command)
+
+    def __update_student_group(self):
+        student_id = self.__get_student_id()
+        new_group = self.__get_student_group()
+        try:
+            old_group = self.__student_services.get_group(student_id)
+        except Exception as e:
+            print(e)
+            return
+        command = Command(self.__student_services.update_group, student_id, new_group)
+        undo_command = Command(self.__student_services.update_group, student_id, old_group)
+        full_command = CommandUndoRedo(command, undo_command)
+        self.__execute_command(full_command)
+
+    def __update_student(self):
         print(self.__OPTIONS["UPDATE_NAME"])
         print(self.__OPTIONS["UPDATE_GROUP"])
         print(self.__OPTIONS["EXIT"])
         option = input("> ")
         match option:
             case self.__UPDATE_NAME:
-                new_name = self.__get_student_name()
-                try:
-                    old_name = self.__student_services.get_name(student_id)
-                except Exception as e:
-                    print(e)
-                    return
-                command = Command(self.__student_services.update_name, student_id, new_name)
-                undo_command = Command(self.__student_services.update_name, student_id, old_name)
-                full_command = CommandUndoRedo(command, undo_command)
-                self.__execute_command(full_command)
+                self.__update_student_name()
             case self.__UPDATE_GROUP:
-                new_group = self.__get_student_group()
-                try:
-                    old_group = self.__student_services.get_group(student_id)
-                except Exception as e:
-                    print(e)
-                    return
-                command = Command(self.__student_services.update_group, student_id, new_group)
-                undo_command = Command(self.__student_services.update_group, student_id, old_group)
-                full_command = CommandUndoRedo(command, undo_command)
-                self.__execute_command(full_command)
+                self.__update_student_group()
             case self.__EXIT:
                 exit(0)
             case _:
@@ -263,6 +270,7 @@ class Application(object):
     def __list_students(self):
         for student in self.__student_services.get_students():
             print(student)
+        print()
 
     def __add_new_assignment(self):
         assignment_id = self.__get_assignment_id()
@@ -288,35 +296,42 @@ class Application(object):
         full_command = CommandUndoRedo(command, undo_command)
         self.__execute_command(full_command)
 
-    def __update_assignment(self):
+    def __update_assignment_description(self):
         assignment_id = self.__get_assignment_id()
+        new_description = self.__get_assignment_description()
+        try:
+            old_description = self.__assignment_services.get_description(assignment_id)
+        except Exception as e:
+            print(e)
+            return
+        command = Command(self.__assignment_services.update_description, assignment_id, new_description)
+        undo_command = Command(self.__assignment_services.update_description, assignment_id, old_description)
+        full_command = CommandUndoRedo(command, undo_command)
+        self.__execute_command(full_command)
+
+    def __update_assignment_deadline(self):
+        assignment_id = self.__get_assignment_id()
+        new_deadline = self.__get_assignment_deadline()
+        try:
+            old_deadline = self.__assignment_services.get_deadline(assignment_id)
+        except Exception as e:
+            print(e)
+            return
+        command = Command(self.__assignment_services.update_deadline, assignment_id, new_deadline)
+        undo_command = Command(self.__assignment_services.update_deadline, assignment_id, old_deadline)
+        full_command = CommandUndoRedo(command, undo_command)
+        self.__execute_command(full_command)
+
+    def __update_assignment(self):
         print(self.__OPTIONS["UPDATE_DESCRIPTION"])
         print(self.__OPTIONS["UPDATE_DEADLINE"])
         print(self.__OPTIONS["EXIT"])
         option = input("> ")
         match option:
             case self.__UPDATE_DESCRIPTION:
-                new_description = self.__get_assignment_description()
-                try:
-                    old_description = self.__assignment_services.get_description(assignment_id)
-                except Exception as e:
-                    print(e)
-                    return
-                command = Command(self.__assignment_services.update_description, assignment_id, new_description)
-                undo_command = Command(self.__assignment_services.update_description, assignment_id, old_description)
-                full_command = CommandUndoRedo(command, undo_command)
-                self.__execute_command(full_command)
+                self.__update_assignment_description()
             case self.__UPDATE_DEADLINE:
-                new_deadline = self.__get_assignment_deadline()
-                try:
-                    old_deadline = self.__assignment_services.get_deadline(assignment_id)
-                except Exception as e:
-                    print(e)
-                    return
-                command = Command(self.__assignment_services.update_description, assignment_id, new_deadline)
-                undo_command = Command(self.__assignment_services.update_description, assignment_id, old_deadline)
-                full_command = CommandUndoRedo(command, undo_command)
-                self.__execute_command(full_command)
+                self.__update_assignment_deadline()
             case self.__EXIT:
                 exit(0)
             case _:
@@ -326,6 +341,23 @@ class Application(object):
     def __list_assignments(self):
         for assignment in self.__assignment_services.get_assignments():
             print(assignment)
+        print()
+
+    def __give_student(self):
+        student_id = self.__get_student_id()
+        assignment_id = self.__get_assignment_id()
+        command = Command(self.__grade_services.assign, student_id, assignment_id)
+        undo_command = Command(self.__grade_services.remove, student_id, assignment_id)
+        full_command = CommandUndoRedo(command, undo_command)
+        self.__execute_command(full_command)
+
+    def __give_group(self):
+        group = self.__get_student_group()
+        assignment_id = self.__get_assignment_id()  # Assignment to be assigned to the group
+        command = Assign(self.__grade_services.assign_group, group, assignment_id)
+        undo_command = Command(self.__grade_services.remove_group_assignment, group, assignment_id)
+        full_command = CommandUndoRedo(command, undo_command)
+        self.__execute_command(full_command)
 
     def __give(self):
         print(self.__OPTIONS["GIVE_STUDENT"])
@@ -334,19 +366,9 @@ class Application(object):
         option = input(">")
         match option:
             case self.__GIVE_STUDENT:
-                student_id = self.__get_student_id()
-                assignment_id = self.__get_assignment_id()
-                command = Command(self.__grade_services.assign, student_id, assignment_id)
-                undo_command = Command(self.__grade_services.remove, student_id, assignment_id)
-                full_command = CommandUndoRedo(command, undo_command)
-                self.__execute_command(full_command)
+                self.__give_student()
             case self.__GIVE_GROUP:
-                group = self.__get_student_group()
-                assignment_id = self.__get_assignment_id()  # Assignment to be assigned to the group
-                command = Assign(self.__grade_services.assign_group, group, assignment_id)
-                undo_command = Command(self.__grade_services.remove_group_assignment, group, assignment_id)
-                full_command = CommandUndoRedo(command, undo_command)
-                self.__execute_command(full_command)
+                self.__give_group()
             case self.__EXIT:
                 exit(0)
             case _:
@@ -457,7 +479,7 @@ class Application(object):
         for grade in self.__grade_services.grade_descending(assignment_id):
             print(self.__student_services.get_student(grade.student_id),
                   "; grade =", grade.grade_value)
-
+        print()
     def __late_students(self):
         late_students = self.__grade_services.get_late_student_grades()
         students = []
@@ -470,10 +492,10 @@ class Application(object):
             for grade in student_ungraded_grades:
                 print(str(grade.assignment_id) + " ", end="")
             print()
+        print()
 
     def __best_students(self):
         best_students_grades = self.__grade_services.get_best_students_grades()
-        # This array has AverageGrade objects, with student ids, and the average grade, output that
-        for average_grade in best_students_grades:
-            student_id = average_grade.student_id
-            print(f"{self.__student_services.get_student(student_id)}, average grade = {average_grade.average}")
+        for student_id in best_students_grades:
+            print(f"{self.__student_services.get_student(student_id)}, average grade = {best_students_grades[student_id]}")
+        print()

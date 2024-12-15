@@ -1,5 +1,8 @@
 from src.commands.command import CommandUndoRedo
 
+class UndoException(Exception):
+    pass
+
 class UndoServices:
     def __init__(self):
         # List of "how" to undo/redo all program operations
@@ -48,14 +51,10 @@ class UndoServices:
         # redo() -> add.redo() = add, index++
 
         if self.__index == 0:
-            print("There are no more actions to be undone!")
-            return
+            raise UndoException("There are no more actions to be undone!")
 
         self.__index -= 1
-        try:
-            self.__history[self.__index].undo()
-        except IndexError:
-            print("There are no more actions to be undone!")
+        self.__history[self.__index].undo()
 
     def redo(self) -> None:
         """
@@ -63,11 +62,7 @@ class UndoServices:
         :return: None
         """
         if self.__index == len(self.__history):
-            print("There are no more actions to be redone!")
-            return
+            raise UndoException("There are no more actions to be redone!")
 
-        try:
-            self.__history[self.__index].redo()
-        except IndexError:
-            print("There are no more actions to be redone!")
+        self.__history[self.__index].redo()
         self.__index += 1
